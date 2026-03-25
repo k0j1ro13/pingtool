@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: pingmonitor
+      POSTGRES_USER: ping
+      POSTGRES_PASSWORD: ping_secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ping -d pingmonitor"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pg_data:

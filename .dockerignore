@@ -1,0 +1,10 @@
+.gradle/
+build/
+composeApp/build/
+.idea/
+*.iml
+*.ipr
+*.iws
+.DS_Store
+local.properties
+*.env
