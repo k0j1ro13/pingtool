@@ -42,16 +42,17 @@ import androidx.compose.ui.unit.dp
 import com.pingmonitor.viewmodel.PingViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
-private data class TabItem(val label: String, val icon: ImageVector)
+private data class TabItem(val label: String, val icon: ImageVector?, val emoji: String? = null)
 
 private val TABS = listOf(
     TabItem("Ping",      Icons.Rounded.Refresh),
     TabItem("Red",       Icons.Rounded.Search),
     TabItem("Mi Red",    Icons.Rounded.Star),
-    TabItem("Historial", Icons.Rounded.List)
+    TabItem("Historial", Icons.Rounded.List),
+    TabItem("Velocidad", icon = null, emoji = "⚡")
 )
 
-private val TAB_TITLES = listOf("PingTool", "Escáner de Red", "Mi Red", "Historial")
+private val TAB_TITLES = listOf("PingTool", "Escáner de Red", "Mi Red", "Historial", "Test de Velocidad")
 
 private data class HelpSection(val title: String, val body: String)
 
@@ -97,6 +98,17 @@ private val HELP_CONTENT = listOf(
             "Cada sesión muestra una etiqueta de calidad:\n• Excelente: sin pérdidas y RTT < 50 ms.\n• Buena: pérdidas mínimas y RTT < 100 ms.\n• Aceptable: algunas pérdidas o latencia alta.\n• Mala: muchas pérdidas o latencia muy alta."),
         HelpSection("🗑️  Limpiar historial",
             "Pulsa 'Limpiar todo' para borrar todas las sesiones. El historial solo persiste mientras la app está abierta; se borra al cerrarla.")
+    ),
+    // Tab 4 — Velocidad
+    listOf(
+        HelpSection("⚡  ¿Qué mide el test?",
+            "Mide tres aspectos de tu conexión:\n• Ping: tiempo de respuesta al servidor (ms).\n• Descarga: velocidad a la que recibes datos (Mbps).\n• Subida: velocidad a la que envías datos (Mbps)."),
+        HelpSection("🌐  Servidor de prueba",
+            "El test usa los servidores de Cloudflare, uno de los más rápidos y distribuidos del mundo. El resultado puede variar según la hora del día y la carga de tu red."),
+        HelpSection("📊  Interpretar resultados",
+            "• < 10 Mbps: conexión lenta.\n• 10–100 Mbps: conexión normal.\n• > 100 Mbps: conexión rápida.\n\nLa subida suele ser más lenta que la descarga en conexiones de fibra asimétricas."),
+        HelpSection("💡  Consejo",
+            "Para mayor precisión, cierra otras apps que consuman red y realiza el test varias veces en distintos momentos del día.")
     )
 )
 
@@ -148,11 +160,18 @@ fun MainScreen() {
                             )
                         },
                         icon = {
-                            Icon(
-                                imageVector = tab.icon,
-                                contentDescription = tab.label,
-                                modifier = Modifier.size(22.dp)
-                            )
+                            if (tab.icon != null) {
+                                Icon(
+                                    imageVector = tab.icon,
+                                    contentDescription = tab.label,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            } else {
+                                Text(
+                                    text = tab.emoji ?: "",
+                                    style = MaterialTheme.typography.titleSmall
+                                )
+                            }
                         },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = MaterialTheme.colorScheme.primary,
@@ -174,6 +193,7 @@ fun MainScreen() {
                 1 -> NetworkScanScreen()
                 2 -> NetworkInfoScreen()
                 3 -> HistoryScreen(viewModel = pingViewModel)
+                4 -> SpeedTestScreen()
             }
         }
     }
