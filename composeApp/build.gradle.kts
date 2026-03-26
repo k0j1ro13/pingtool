@@ -66,6 +66,7 @@ kotlin {
             implementation(libs.koin.android)
             implementation(libs.androidx.activity.compose)
             implementation(libs.sqldelight.android.driver)
+            implementation(libs.play.services.ads)
         }
 
         desktopMain.dependencies {
@@ -107,8 +108,8 @@ android {
         applicationId = "com.pingmonitor"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.0.2"
+        versionCode = 3
+        versionName = "1.0.3"
     }
 
     buildTypes {

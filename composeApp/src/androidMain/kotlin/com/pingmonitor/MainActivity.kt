@@ -9,6 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.google.android.gms.ads.MobileAds
 import com.pingmonitor.data.NetworkInfoImpl
 import com.pingmonitor.data.NotifierImpl
 import com.pingmonitor.di.appModule
@@ -23,6 +24,9 @@ class MainActivity : ComponentActivity() {
         // Contexto para notificaciones e info de red (patrón companion object)
         NotifierImpl.appContext = applicationContext
         NetworkInfoImpl.appContext = applicationContext
+
+        // Inicializar AdMob
+        MobileAds.initialize(this)
 
         // Solicitar permiso de notificaciones en Android 13+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {

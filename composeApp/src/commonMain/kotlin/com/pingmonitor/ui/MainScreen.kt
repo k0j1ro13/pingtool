@@ -144,6 +144,8 @@ fun MainScreen() {
             )
         },
         bottomBar = {
+            Column {
+            AdBanner()
             NavigationBar(
                 containerColor = MaterialTheme.colorScheme.surface,
                 tonalElevation = 0.dp
@@ -181,6 +183,7 @@ fun MainScreen() {
                     )
                 }
             }
+            } // Column del bottomBar
         }
     ) { padding ->
         Column(
