@@ -10,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -100,10 +101,11 @@ fun PingScreen(viewModel: PingViewModel = koinViewModel()) {
         }
     }
 
-    // Auto-scroll al último resultado
+    // Auto-scroll al final de la lista cuando llega un nuevo resultado
     LaunchedEffect(state.results.size) {
         if (state.results.isNotEmpty()) {
-            listState.animateScrollToItem(state.results.size - 1)
+            val total = listState.layoutInfo.totalItemsCount
+            if (total > 0) listState.animateScrollToItem(total - 1)
         }
     }
 
@@ -118,192 +120,204 @@ fun PingScreen(viewModel: PingViewModel = koinViewModel()) {
         )
     )
 
-    Column(
+    val isEmpty = state.results.isEmpty() && !state.isRunning && !state.isPaused
+
+    LazyColumn(
+        state = listState,
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        contentPadding = PaddingValues(vertical = 16.dp)
     ) {
-        // Campo de IP con indicador de actividad
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            OutlinedTextField(
-                value = state.host,
-                onValueChange = viewModel::onHostChange,
-                label = { Text("IP o Hostname") },
-                placeholder = { Text("ej. 8.8.8.8") },
-                singleLine = true,
-                isError = state.errorMessage != null,
-                supportingText = {
-                    state.errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                },
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
-                keyboardActions = KeyboardActions(onGo = {
-                    when {
-                        state.isPaused -> viewModel.resumePing()
-                        !state.isRunning -> viewModel.startPing()
-                    }
-                }),
-                modifier = Modifier.weight(1f),
-                enabled = !state.isRunning
-            )
-            if (state.isRunning) {
-                Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF4CAF50))
-                        .alpha(pulseAlpha)
+        // ── Campo IP + indicador de actividad ──────────────────────────────
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = state.host,
+                    onValueChange = viewModel::onHostChange,
+                    label = { Text("IP o Hostname") },
+                    placeholder = { Text("ej. 8.8.8.8") },
+                    singleLine = true,
+                    isError = state.errorMessage != null,
+                    supportingText = {
+                        state.errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                    },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
+                    keyboardActions = KeyboardActions(onGo = {
+                        when {
+                            state.isPaused -> viewModel.resumePing()
+                            !state.isRunning -> viewModel.startPing()
+                        }
+                    }),
+                    modifier = Modifier.weight(1f),
+                    enabled = !state.isRunning
+                )
+                if (state.isRunning) {
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF4CAF50))
+                            .alpha(pulseAlpha)
+                    )
+                }
+            }
+        }
+
+        // ── Selectores de intervalo y tamaño ──────────────────────────────
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                IntervalDropdown(
+                    selectedMs = state.intervalMs,
+                    onSelect = viewModel::onIntervalChange,
+                    enabled = !state.isRunning,
+                    modifier = Modifier.weight(1f)
+                )
+                SizeDropdown(
+                    selectedBytes = state.selectedSizeBytes,
+                    onSelect = viewModel::onSizeChange,
+                    enabled = !state.isRunning,
+                    modifier = Modifier.weight(1f)
                 )
             }
         }
 
-        // Selectores de intervalo y tamaño
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            IntervalDropdown(
-                selectedMs = state.intervalMs,
-                onSelect = viewModel::onIntervalChange,
-                enabled = !state.isRunning,
-                modifier = Modifier.weight(1f)
-            )
-            SizeDropdown(
-                selectedBytes = state.selectedSizeBytes,
-                onSelect = viewModel::onSizeChange,
-                enabled = !state.isRunning,
-                modifier = Modifier.weight(1f)
-            )
-        }
-
-        // Botones con iconos
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Button(
-                onClick = { if (state.isPaused) viewModel.resumePing() else viewModel.startPing() },
-                enabled = !state.isRunning,
-                modifier = Modifier.weight(1f)
-            ) {
-                Icon(Icons.Rounded.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(4.dp))
-                Text(if (state.isPaused) "Reanudar" else "Iniciar")
-            }
-            OutlinedButton(
-                onClick = viewModel::pausePing,
-                enabled = state.isRunning,
-                modifier = Modifier.weight(1f)
-            ) {
-                Text("⏸  Pausar")
-            }
-            OutlinedButton(
-                onClick = viewModel::stopPing,
-                enabled = state.isRunning || state.isPaused,
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFF6B6B)),
-                modifier = Modifier.weight(1f)
-            ) {
-                Icon(Icons.Rounded.Close, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(4.dp))
-                Text("Detener")
-            }
-        }
-
-        // Zona de resultados o empty state
-        if (state.results.isEmpty() && !state.isRunning && !state.isPaused) {
-            // Empty state
-            Box(
-                modifier = Modifier.weight(1f).fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text("📡", style = MaterialTheme.typography.displayMedium)
-                    Text(
-                        text = "Listo para monitorizar",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "Introduce una IP o hostname y pulsa Iniciar",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        } else {
-            // Hero: último RTT
-            state.results.lastOrNull()?.let { last ->
-                RttHeroCard(last)
-            }
-
-            // Gráfica de RTT
-            if (state.results.any { it.rttMs != null }) {
-                RttChart(results = state.results)
-            }
-
-            // Cabecera de tabla + tiempo + limpiar
+        // ── Botones ───────────────────────────────────────────────────────
+        item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Row(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                Button(
+                    onClick = { if (state.isPaused) viewModel.resumePing() else viewModel.startPing() },
+                    enabled = !state.isRunning,
+                    modifier = Modifier.weight(1f)
                 ) {
-                    listOf("Seq", "Tamaño", "RTT", "Estado").forEach {
+                    Icon(Icons.Rounded.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text(if (state.isPaused) "Reanudar" else "Iniciar")
+                }
+                OutlinedButton(
+                    onClick = viewModel::pausePing,
+                    enabled = state.isRunning,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("⏸  Pausar")
+                }
+                OutlinedButton(
+                    onClick = viewModel::stopPing,
+                    enabled = state.isRunning || state.isPaused,
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFF6B6B)),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Rounded.Close, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Detener")
+                }
+            }
+        }
+
+        if (isEmpty) {
+            // ── Empty state ───────────────────────────────────────────────
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(280.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text("📡", style = MaterialTheme.typography.displayMedium)
                         Text(
-                            text = it,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontFamily = FontFamily.Monospace,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
+                            text = "Listo para monitorizar",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Introduce una IP o hostname y pulsa Iniciar",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
-                if (state.sessionStartMs != null) {
-                    val h = elapsedSeconds / 3600
-                    val m = (elapsedSeconds % 3600) / 60
-                    val s = elapsedSeconds % 60
-                    Text(
-                        text = if (h > 0) "%d:%02d:%02d".format(h, m, s) else "%d:%02d".format(m, s),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontFamily = FontFamily.Monospace,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-                TextButton(
-                    onClick = viewModel::clearResults,
-                    enabled = !state.isRunning
+            }
+        } else {
+            // ── Hero: último RTT ──────────────────────────────────────────
+            state.results.lastOrNull()?.let { last ->
+                item { RttHeroCard(last) }
+            }
+
+            // ── Gráfica RTT ───────────────────────────────────────────────
+            if (state.results.any { it.rttMs != null }) {
+                item { RttChart(results = state.results) }
+            }
+
+            // ── Cabecera tabla + timer + limpiar ─────────────────────────
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Limpiar", style = MaterialTheme.typography.labelSmall)
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        listOf("Seq", "Tamaño", "RTT", "Estado").forEach {
+                            Text(
+                                text = it,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontFamily = FontFamily.Monospace,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                    if (state.sessionStartMs != null) {
+                        val h = elapsedSeconds / 3600
+                        val m = (elapsedSeconds % 3600) / 60
+                        val s = elapsedSeconds % 60
+                        Text(
+                            text = if (h > 0) "%d:%02d:%02d".format(h, m, s) else "%d:%02d".format(m, s),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontFamily = FontFamily.Monospace,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    TextButton(
+                        onClick = viewModel::clearResults,
+                        enabled = !state.isRunning
+                    ) {
+                        Text("Limpiar", style = MaterialTheme.typography.labelSmall)
+                    }
                 }
-            }
-            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
-
-            // Lista de resultados
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(3.dp)
-            ) {
-                items(state.results, key = { it.seq }) { result ->
-                    PingRow(result)
-                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             }
 
-            // Panel de estadísticas
-            Spacer(Modifier.height(2.dp))
-            StatsPanel(stats = state.stats)
+            // ── Filas de resultados ───────────────────────────────────────
+            items(state.results, key = { it.seq }) { result ->
+                PingRow(result)
+            }
+
+            // ── Panel de estadísticas ─────────────────────────────────────
+            item {
+                Spacer(Modifier.height(2.dp))
+                StatsPanel(stats = state.stats)
+                Spacer(Modifier.height(8.dp))
+            }
         }
     }
 }
@@ -312,14 +326,14 @@ fun PingScreen(viewModel: PingViewModel = koinViewModel()) {
 @Composable
 private fun RttHeroCard(last: PingResult) {
     val statusColor = when (last.status) {
-        PingStatus.OK -> Color(0xFF2E7D32)
+        PingStatus.OK      -> Color(0xFF2E7D32)
         PingStatus.TIMEOUT -> Color(0xFFE65100)
-        PingStatus.ERROR -> Color(0xFFB71C1C)
+        PingStatus.ERROR   -> Color(0xFFB71C1C)
     }
     val statusLabel = when (last.status) {
-        PingStatus.OK -> "✓  Paquete recibido"
+        PingStatus.OK      -> "✓  Paquete recibido"
         PingStatus.TIMEOUT -> "⏱  Timeout"
-        PingStatus.ERROR -> "✗  Error"
+        PingStatus.ERROR   -> "✗  Error"
     }
 
     Row(
@@ -355,7 +369,6 @@ private fun RttHeroCard(last: PingResult) {
                 }
             }
         }
-        // Badge de estado
         Box(
             modifier = Modifier
                 .background(statusColor.copy(alpha = 0.15f), RoundedCornerShape(20.dp))

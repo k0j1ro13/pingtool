@@ -4,17 +4,34 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
-import java.net.InetAddress
+import java.net.InetSocketAddress
+import java.net.Socket
 import java.net.URL
 
 actual class SpeedTesterImpl actual constructor() : SpeedTesterRepository {
 
-    override suspend fun measurePing(host: String): Double? = try {
-        val addr = InetAddress.getByName(host)
-        val start = System.currentTimeMillis()
-        if (addr.isReachable(3000)) System.currentTimeMillis() - start.toDouble() else null
-    } catch (_: Exception) { null }
+    override suspend fun measurePing(host: String): Double? = withContext(Dispatchers.IO) {
+        // InetAddress.isReachable() requiere root en Android (ICMP bloqueado).
+        // Usamos TCP al puerto 80 como alternativa fiable.
+        try {
+            val start = System.currentTimeMillis()
+            Socket().use { socket ->
+                socket.connect(InetSocketAddress(host, 80), 3000)
+            }
+            (System.currentTimeMillis() - start).toDouble()
+        } catch (_: Exception) {
+            // Segundo intento al puerto 443
+            try {
+                val start = System.currentTimeMillis()
+                Socket().use { socket ->
+                    socket.connect(InetSocketAddress(host, 443), 3000)
+                }
+                (System.currentTimeMillis() - start).toDouble()
+            } catch (_: Exception) { null }
+        }
+    }
 
     override fun measureDownload(): Flow<Double> = flow {
         val url = URL("https://speed.cloudflare.com/__down?bytes=25000000")

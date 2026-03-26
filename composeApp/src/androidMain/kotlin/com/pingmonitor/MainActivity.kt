@@ -9,6 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.pingmonitor.data.NetworkInfoImpl
 import com.pingmonitor.data.NotifierImpl
 import com.pingmonitor.di.appModule
 import org.koin.android.ext.koin.androidContext
@@ -19,8 +20,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Contexto para notificaciones (patrón companion object)
+        // Contexto para notificaciones e info de red (patrón companion object)
         NotifierImpl.appContext = applicationContext
+        NetworkInfoImpl.appContext = applicationContext
 
         // Solicitar permiso de notificaciones en Android 13+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
