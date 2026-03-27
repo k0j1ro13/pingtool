@@ -114,7 +114,10 @@ private val HELP_CONTENT = listOf(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen() {
+fun MainScreen(
+    isDarkTheme: Boolean = true,
+    onToggleTheme: () -> Unit = {}
+) {
     var selectedTab by remember { mutableIntStateOf(0) }
     var showHelp by remember { mutableStateOf(false) }
     val pingViewModel: PingViewModel = koinViewModel()
@@ -128,6 +131,12 @@ fun MainScreen() {
             TopAppBar(
                 title = { Text(TAB_TITLES[selectedTab], fontWeight = FontWeight.Bold) },
                 actions = {
+                    IconButton(onClick = onToggleTheme) {
+                        Text(
+                            text = if (isDarkTheme) "☀️" else "🌙",
+                            style = MaterialTheme.typography.titleSmall
+                        )
+                    }
                     IconButton(onClick = { showHelp = true }) {
                         Text(
                             text = "?",

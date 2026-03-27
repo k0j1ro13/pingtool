@@ -25,7 +25,7 @@ val appModule = module {
     single<PingerRepository> { PingerImpl() }
     single<NotifierRepository> { NotifierImpl() }
     factory { PingUseCase(get()) }
-    viewModel { PingViewModel(get(), get()) }
+    viewModel { PingViewModel(get(), get(), get()) }
 
     // Escáner de red
     single<NetworkScannerRepository> { NetworkScannerImpl() }

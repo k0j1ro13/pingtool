@@ -1,5 +1,8 @@
 package com.pingmonitor.ui
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,6 +16,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,6 +32,13 @@ private const val RTT_HIGH   = 200.0
 
 @Composable
 fun StatsPanel(stats: PingStats, modifier: Modifier = Modifier) {
+    val animSpec   = spring<Float>(stiffness = Spring.StiffnessMediumLow)
+    val animLost   by animateFloatAsState(stats.lostPercent.toFloat(), animSpec, label = "lost")
+    val animAvg    by animateFloatAsState(stats.rttAvg.toFloat(),      animSpec, label = "avg")
+    val animMin    by animateFloatAsState(stats.rttMin.toFloat(),       animSpec, label = "min")
+    val animMax    by animateFloatAsState(stats.rttMax.toFloat(),       animSpec, label = "max")
+    val animJitter by animateFloatAsState(stats.jitter.toFloat(),       animSpec, label = "jitter")
+
     val rttColor = when {
         stats.received == 0 -> Color.Unspecified
         stats.rttAvg < RTT_GOOD -> Color(0xFF2E7D32)
@@ -64,16 +75,22 @@ fun StatsPanel(stats: PingStats, modifier: Modifier = Modifier) {
 
         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
 
-        // Fila 1 — paquetes
+        // Fila 1 — pérdida + jitter
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            StatCell("Enviados",  stats.sent.toString())
-            StatCell("Recibidos", stats.received.toString())
-            StatCell("Perdidos",  "%.1f%%".format(stats.lostPercent), lostColor)
+            val jitterColor = when {
+                stats.received < 2 -> Color.Unspecified
+                stats.jitter < 5   -> Color(0xFF2E7D32)
+                stats.jitter < 20  -> Color(0xFFF9A825)
+                else               -> Color(0xFFB71C1C)
+            }
+            StatCell("Enviados",  "${stats.sent}")
+            StatCell("Perdidos",  "%.1f%%".format(animLost), lostColor)
+            StatCell("Jitter",    "%.1f ms".format(animJitter), jitterColor)
         }
 
         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
@@ -85,9 +102,9 @@ fun StatsPanel(stats: PingStats, modifier: Modifier = Modifier) {
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            StatCell("RTT mín", "%.1f ms".format(stats.rttMin))
-            StatCell("RTT med", "%.1f ms".format(stats.rttAvg), rttColor)
-            StatCell("RTT máx", "%.1f ms".format(stats.rttMax))
+            StatCell("RTT mín", "%.1f ms".format(animMin))
+            StatCell("RTT med", "%.1f ms".format(animAvg), rttColor)
+            StatCell("RTT máx", "%.1f ms".format(animMax))
         }
     }
 }

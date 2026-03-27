@@ -13,6 +13,14 @@ import kotlin.time.measureTimedValue
  */
 actual class PingerImpl actual constructor() : PingerRepository {
 
+    override suspend fun resolveHost(host: String): String? =
+        withContext(Dispatchers.IO) {
+            try {
+                val addr = InetAddress.getByName(host)
+                addr.hostAddress?.takeIf { it != host }
+            } catch (e: Exception) { null }
+        }
+
     override suspend fun ping(host: String, sizeBytes: Int, timeoutMs: Int): PingResult =
         withContext(Dispatchers.IO) {
             try {

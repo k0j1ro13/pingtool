@@ -4,6 +4,7 @@ import com.pingmonitor.domain.PingResult
 import com.pingmonitor.domain.PingStatus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.net.InetAddress
 import kotlin.time.measureTimedValue
 
 /**
@@ -11,6 +12,13 @@ import kotlin.time.measureTimedValue
  * Soporta Windows y Unix/macOS. Permite controlar el tamaño real del paquete.
  */
 actual class PingerImpl actual constructor() : PingerRepository {
+
+    override suspend fun resolveHost(host: String): String? =
+        withContext(Dispatchers.IO) {
+            try {
+                InetAddress.getByName(host).hostAddress?.takeIf { it != host }
+            } catch (e: Exception) { null }
+        }
 
     override suspend fun ping(host: String, sizeBytes: Int, timeoutMs: Int): PingResult =
         withContext(Dispatchers.IO) {

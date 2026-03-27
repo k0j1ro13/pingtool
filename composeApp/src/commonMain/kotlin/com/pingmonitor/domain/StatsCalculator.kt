@@ -21,16 +21,23 @@ object StatsCalculator {
                 lostPercent = lostPercent,
                 rttMin = 0.0,
                 rttAvg = 0.0,
-                rttMax = 0.0
+                rttMax = 0.0,
+                jitter = 0.0
             )
         } else {
+            // Jitter: media de las diferencias absolutas entre RTTs consecutivos (RFC 3550)
+            val jitter = if (rtts.size < 2) 0.0 else {
+                rtts.zipWithNext { a, b -> kotlin.math.abs(b - a) }.average()
+            }
+
             PingStats(
                 sent = sent,
                 received = received,
                 lostPercent = lostPercent,
                 rttMin = rtts.min(),
                 rttAvg = rtts.average(),
-                rttMax = rtts.max()
+                rttMax = rtts.max(),
+                jitter = jitter
             )
         }
     }

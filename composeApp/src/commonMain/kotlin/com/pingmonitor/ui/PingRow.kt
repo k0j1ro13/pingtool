@@ -23,7 +23,7 @@ import com.pingmonitor.domain.PingResult
 import com.pingmonitor.domain.PingStatus
 
 @Composable
-fun PingRow(result: PingResult) {
+fun PingRow(result: PingResult, modifier: Modifier = Modifier) {
     val statusColor = when (result.status) {
         PingStatus.OK -> Color(0xFF2E7D32)
         PingStatus.TIMEOUT -> Color(0xFFE65100)
@@ -37,7 +37,7 @@ fun PingRow(result: PingResult) {
     val rttText = result.rttMs?.let { "%.1f ms".format(it) } ?: "—"
 
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(6.dp)),
         verticalAlignment = Alignment.CenterVertically

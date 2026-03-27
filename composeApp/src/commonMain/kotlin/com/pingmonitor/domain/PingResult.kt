@@ -28,7 +28,8 @@ data class PingStats(
     val lostPercent: Double,
     val rttMin: Double,
     val rttAvg: Double,
-    val rttMax: Double
+    val rttMax: Double,
+    val jitter: Double  // variación media entre pings consecutivos (ms)
 ) {
     companion object {
         val EMPTY = PingStats(
@@ -37,7 +38,8 @@ data class PingStats(
             lostPercent = 0.0,
             rttMin = 0.0,
             rttAvg = 0.0,
-            rttMax = 0.0
+            rttMax = 0.0,
+            jitter = 0.0
         )
     }
 }

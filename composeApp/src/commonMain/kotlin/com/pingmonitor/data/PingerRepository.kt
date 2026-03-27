@@ -13,4 +13,10 @@ interface PingerRepository {
      * @return [PingResult] con el RTT medido o estado TIMEOUT/ERROR.
      */
     suspend fun ping(host: String, sizeBytes: Int, timeoutMs: Int = 2000): PingResult
+
+    /**
+     * Resuelve el hostname a su dirección IP. Devuelve null si ya es una IP
+     * o si la resolución falla. Implementado en Android y Desktop.
+     */
+    suspend fun resolveHost(host: String): String? = null
 }
