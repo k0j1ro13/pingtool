@@ -5,33 +5,50 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Punto base de la señal -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M54,78 m-5,0 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0" />
-
-    <!-- Arco pequeño -->
+    <!-- Línea base izquierda -->
     <path
         android:fillColor="#00000000"
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="5.5"
+        android:strokeWidth="5"
         android:strokeLineCap="round"
-        android:pathData="M42,66 A12,12 0 0,1 66,66" />
+        android:strokeLineJoin="round"
+        android:pathData="M 18,58 L 34,58" />
 
-    <!-- Arco mediano -->
+    <!-- Pulso (pico ECG / ping spike) -->
     <path
         android:fillColor="#00000000"
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="5.5"
+        android:strokeWidth="5"
         android:strokeLineCap="round"
-        android:pathData="M32,56 A22,22 0 0,1 76,56" />
+        android:strokeLineJoin="round"
+        android:pathData="M 34,58 L 43,58 L 49,32 L 57,76 L 63,58 L 72,58" />
 
-    <!-- Arco grande -->
+    <!-- Línea base derecha -->
     <path
         android:fillColor="#00000000"
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="5.5"
+        android:strokeWidth="5"
         android:strokeLineCap="round"
-        android:pathData="M20,44 A34,34 0 0,1 88,44" />
+        android:strokeLineJoin="round"
+        android:pathData="M 72,58 L 90,58" />
+
+    <!-- Punto de respuesta (blip) sobre la línea base derecha -->
+    <path
+        android:fillColor="#70F7E6"
+        android:pathData="M 80,58 m-4,0 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0" />
+
+    <!-- Pequeña etiqueta "ms" — dos trazos estilizados representando tiempo -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#70F7E6"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M 22,76 L 22,84 L 27,79 L 32,84 L 32,76" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#70F7E6"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M 37,84 A3,4 0 0,1 37,76 A3,4 0 0,1 43,80 A3,4 0 0,0 43,84" />
 
 </vector>

@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -25,35 +26,50 @@ import com.pingmonitor.domain.PingStatus
 @Composable
 fun PingRow(result: PingResult, modifier: Modifier = Modifier) {
     val statusColor = when (result.status) {
-        PingStatus.OK -> Color(0xFF2E7D32)
+        PingStatus.OK      -> Color(0xFF2E7D32)
         PingStatus.TIMEOUT -> Color(0xFFE65100)
-        PingStatus.ERROR -> Color(0xFFB71C1C)
+        PingStatus.ERROR   -> Color(0xFFB71C1C)
     }
     val statusLabel = when (result.status) {
-        PingStatus.OK -> "OK"
-        PingStatus.TIMEOUT -> "TIMEOUT"
-        PingStatus.ERROR -> "ERROR"
+        PingStatus.OK      -> "✓ OK"
+        PingStatus.TIMEOUT -> "⏱ TIMEOUT"
+        PingStatus.ERROR   -> "✗ ERROR"
     }
     val rttText = result.rttMs?.let { "%.1f ms".format(it) } ?: "—"
+
+    val rttColor = when {
+        result.rttMs == null          -> MaterialTheme.colorScheme.onSurfaceVariant
+        result.rttMs < 50.0           -> Color(0xFF2E7D32)
+        result.rttMs < 150.0          -> Color(0xFFF9A825)
+        result.rttMs < 300.0          -> Color(0xFFE65100)
+        else                          -> Color(0xFFB71C1C)
+    }
+
+    val rowGradient = Brush.horizontalGradient(
+        colors = listOf(
+            statusColor.copy(alpha = 0.08f),
+            MaterialTheme.colorScheme.surfaceVariant
+        )
+    )
 
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(6.dp)),
+            .clip(RoundedCornerShape(8.dp)),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Barra de color lateral según el estado
+        // Barra de color lateral
         Box(
             modifier = Modifier
-                .width(4.dp)
-                .height(42.dp)
+                .width(3.dp)
+                .height(40.dp)
                 .background(statusColor)
         )
         Row(
             modifier = Modifier
                 .weight(1f)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+                .background(rowGradient)
+                .padding(horizontal = 12.dp, vertical = 9.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -73,17 +89,16 @@ fun PingRow(result: PingResult, modifier: Modifier = Modifier) {
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.width(52.dp)
             )
-            // RTT — resaltado si es OK
+            // RTT coloreado por latencia
             Text(
                 text = rttText,
                 style = MaterialTheme.typography.bodyMedium,
                 fontFamily = FontFamily.Monospace,
-                fontWeight = if (result.status == PingStatus.OK) FontWeight.SemiBold else FontWeight.Normal,
-                color = if (result.status == PingStatus.OK) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.SemiBold,
+                color = rttColor,
                 modifier = Modifier.width(80.dp)
             )
-            // Chip de estado con fondo de color tenue
+            // Chip de estado
             Box(
                 modifier = Modifier
                     .background(statusColor.copy(alpha = 0.15f), RoundedCornerShape(10.dp))
