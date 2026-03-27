@@ -29,7 +29,8 @@ data class PingStats(
     val rttMin: Double,
     val rttAvg: Double,
     val rttMax: Double,
-    val jitter: Double  // variación media entre pings consecutivos (ms)
+    val jitter: Double,       // variación media entre pings consecutivos (ms)
+    val qualityScore: Int     // puntuación de calidad 0-100
 ) {
     companion object {
         val EMPTY = PingStats(
@@ -39,7 +40,8 @@ data class PingStats(
             rttMin = 0.0,
             rttAvg = 0.0,
             rttMax = 0.0,
-            jitter = 0.0
+            jitter = 0.0,
+            qualityScore = 0
         )
     }
 }

@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -41,7 +42,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pingmonitor.domain.SpeedTestPhase
-import com.pingmonitor.domain.SpeedTestProgress
 import com.pingmonitor.viewmodel.SpeedTestViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -58,7 +58,6 @@ fun SpeedTestScreen(viewModel: SpeedTestViewModel = koinViewModel()) {
     ) {
         Spacer(Modifier.height(8.dp))
 
-        // ── Marcador circular ─────────────────────────────────────────────
         val currentMbps = when (state.progress.phase) {
             SpeedTestPhase.DOWNLOAD -> state.progress.downloadMbps
             SpeedTestPhase.UPLOAD   -> state.progress.uploadMbps
@@ -67,51 +66,52 @@ fun SpeedTestScreen(viewModel: SpeedTestViewModel = koinViewModel()) {
 
         SpeedGauge(
             currentMbps = currentMbps,
-            phase = state.progress.phase,
-            isTesting = state.isTesting
+            phase       = state.progress.phase,
+            isTesting   = state.isTesting
         )
 
-        // ── Tarjetas de resultado ─────────────────────────────────────────
+        // Tarjetas de resultado con gradiente por métrica
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             ResultCard(
-                label = "Ping",
-                value = state.progress.pingMs?.let { "%.0f ms".format(it) } ?: "—",
-                emoji = "🔁",
-                modifier = Modifier.weight(1f)
+                label     = "Ping",
+                value     = state.progress.pingMs?.let { "%.0f ms".format(it) } ?: "—",
+                emoji     = "🔁",
+                accentColor = Color(0xFF42A5F5),
+                modifier  = Modifier.weight(1f)
             )
             ResultCard(
-                label = "Descarga",
-                value = state.progress.downloadMbps?.let { "%.1f Mbps".format(it) } ?: "—",
-                emoji = "📥",
-                modifier = Modifier.weight(1f)
+                label     = "Descarga",
+                value     = state.progress.downloadMbps?.let { "%.1f Mbps".format(it) } ?: "—",
+                emoji     = "📥",
+                accentColor = Color(0xFF66BB6A),
+                modifier  = Modifier.weight(1f)
             )
             ResultCard(
-                label = "Subida",
-                value = state.progress.uploadMbps?.let { "%.1f Mbps".format(it) } ?: "—",
-                emoji = "📤",
-                modifier = Modifier.weight(1f)
+                label     = "Subida",
+                value     = state.progress.uploadMbps?.let { "%.1f Mbps".format(it) } ?: "—",
+                emoji     = "📤",
+                accentColor = Color(0xFFFF9800),
+                modifier  = Modifier.weight(1f)
             )
         }
 
-        // ── Error ─────────────────────────────────────────────────────────
         val errorMsg = state.progress.error
         if (errorMsg != null) {
             Text(
-                text = errorMsg,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
+                text      = errorMsg,
+                style     = MaterialTheme.typography.bodySmall,
+                color     = MaterialTheme.colorScheme.error,
                 textAlign = TextAlign.Center
             )
         }
 
-        // ── Botones ───────────────────────────────────────────────────────
         if (state.isTesting) {
             OutlinedButton(
                 onClick = viewModel::cancelTest,
-                colors = ButtonDefaults.outlinedButtonColors(
+                colors  = ButtonDefaults.outlinedButtonColors(
                     contentColor = MaterialTheme.colorScheme.error
                 )
             ) {
@@ -124,25 +124,22 @@ fun SpeedTestScreen(viewModel: SpeedTestViewModel = koinViewModel()) {
                 Icon(Icons.Rounded.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
                 Text(
-                    text = if (state.progress.phase == SpeedTestPhase.IDLE) "Iniciar test" else "Repetir test",
+                    text       = if (state.progress.phase == SpeedTestPhase.IDLE) "Iniciar test" else "Repetir test",
                     fontWeight = FontWeight.Bold
                 )
             }
         }
 
-        // ── Nota sobre la conexión ────────────────────────────────────────
         if (state.progress.phase == SpeedTestPhase.IDLE) {
             Text(
-                text = "Usa los servidores de Cloudflare.\nCierra otras apps que consuman red para mayor precisión.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                text      = "Usa los servidores de Cloudflare.\nCierra otras apps que consuman red para mayor precisión.",
+                style     = MaterialTheme.typography.bodySmall,
+                color     = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
         }
     }
 }
-
-// ── Marcador circular ─────────────────────────────────────────────────────────
 
 @Composable
 private fun SpeedGauge(
@@ -151,44 +148,55 @@ private fun SpeedGauge(
     isTesting: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val maxMbps = 500.0
-    val progress = ((currentMbps ?: 0.0) / maxMbps).coerceIn(0.0, 1.0).toFloat()
-
+    val maxMbps    = 500.0
+    val progress   = ((currentMbps ?: 0.0) / maxMbps).coerceIn(0.0, 1.0).toFloat()
     val speedColor = speedColor(currentMbps)
 
     val animatedProgress by animateFloatAsState(
-        targetValue = progress,
+        targetValue  = progress,
         animationSpec = tween(400),
-        label = "gauge"
+        label        = "gauge"
     )
 
-    val outlineColor = MaterialTheme.colorScheme.outline
+    val outlineColor  = MaterialTheme.colorScheme.outline
+    val surfaceColor  = MaterialTheme.colorScheme.surfaceVariant
 
     Box(
         contentAlignment = Alignment.Center,
-        modifier = modifier.size(220.dp)
+        modifier         = modifier.size(220.dp)
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
-            val strokeWidth = 22.dp.toPx()
-            val padding     = strokeWidth / 2f
-            val arcSize     = Size(size.width - padding * 2, size.height - padding * 2)
-            val topLeft     = Offset(padding, padding)
-            val startAngle  = 150f
-            val sweepTotal  = 240f
+            val strokeWidth  = 22.dp.toPx()
+            val glowWidth    = 36.dp.toPx()
+            val padding      = strokeWidth / 2f + 2.dp.toPx()
+            val arcSize      = Size(size.width - padding * 2, size.height - padding * 2)
+            val topLeft      = Offset(padding, padding)
+            val startAngle   = 150f
+            val sweepTotal   = 240f
 
-            // Arco de fondo
+            // Fondo del gauge
             drawArc(
-                color       = outlineColor.copy(alpha = 0.2f),
-                startAngle  = startAngle,
-                sweepAngle  = sweepTotal,
-                useCenter   = false,
-                topLeft     = topLeft,
-                size        = arcSize,
-                style       = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                color      = outlineColor.copy(alpha = 0.15f),
+                startAngle = startAngle,
+                sweepAngle = sweepTotal,
+                useCenter  = false,
+                topLeft    = topLeft,
+                size       = arcSize,
+                style      = Stroke(width = strokeWidth, cap = StrokeCap.Round)
             )
 
-            // Arco de progreso
+            // Halo/glow del arco de progreso
             if (animatedProgress > 0f) {
+                drawArc(
+                    color      = speedColor.copy(alpha = 0.18f),
+                    startAngle = startAngle,
+                    sweepAngle = sweepTotal * animatedProgress,
+                    useCenter  = false,
+                    topLeft    = topLeft,
+                    size       = arcSize,
+                    style      = Stroke(width = glowWidth, cap = StrokeCap.Round)
+                )
+                // Arco principal
                 drawArc(
                     color      = speedColor,
                     startAngle = startAngle,
@@ -203,12 +211,13 @@ private fun SpeedGauge(
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = if (currentMbps != null) "%.1f".format(currentMbps) else
-                    if (phase == SpeedTestPhase.PING && isTesting) "…" else "—",
-                style       = MaterialTheme.typography.displaySmall,
-                fontWeight  = FontWeight.Bold,
-                fontFamily  = FontFamily.Monospace,
-                color       = if (currentMbps != null) speedColor else MaterialTheme.colorScheme.onSurfaceVariant
+                text       = if (currentMbps != null) "%.1f".format(currentMbps)
+                             else if (phase == SpeedTestPhase.PING && isTesting) "…" else "—",
+                style      = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Monospace,
+                color      = if (currentMbps != null) speedColor
+                             else MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
                 text  = "Mbps",
@@ -225,27 +234,32 @@ private fun SpeedGauge(
                     SpeedTestPhase.ERROR    -> "⚠  Error"
                     SpeedTestPhase.IDLE     -> "Listo"
                 },
-                style  = MaterialTheme.typography.labelMedium,
-                color  = MaterialTheme.colorScheme.onSurfaceVariant,
+                style      = MaterialTheme.typography.labelMedium,
+                color      = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Medium
             )
         }
     }
 }
 
-// ── Tarjeta de resultado ──────────────────────────────────────────────────────
-
 @Composable
 private fun ResultCard(
     label: String,
     value: String,
     emoji: String,
+    accentColor: Color,
     modifier: Modifier = Modifier
 ) {
+    val gradient = Brush.verticalGradient(
+        colors = listOf(
+            accentColor.copy(alpha = 0.18f),
+            MaterialTheme.colorScheme.surfaceVariant
+        )
+    )
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .background(gradient)
             .padding(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -261,17 +275,15 @@ private fun ResultCard(
             style      = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
             fontFamily = FontFamily.Monospace,
-            color      = MaterialTheme.colorScheme.onSurface,
+            color      = if (value == "—") MaterialTheme.colorScheme.onSurfaceVariant else accentColor,
             textAlign  = TextAlign.Center
         )
     }
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
 private fun speedColor(mbps: Double?): Color = when {
-    mbps == null || mbps < 10  -> Color(0xFFEF5350)
-    mbps < 50                  -> Color(0xFFFF9800)
-    mbps < 150                 -> Color(0xFFFFEB3B)
-    else                       -> Color(0xFF4CAF50)
+    mbps == null || mbps < 10 -> Color(0xFFEF5350)
+    mbps < 50                 -> Color(0xFFFF9800)
+    mbps < 150                -> Color(0xFFFFEB3B)
+    else                      -> Color(0xFF4CAF50)
 }

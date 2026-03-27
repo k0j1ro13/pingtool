@@ -2,8 +2,10 @@ package com.pingmonitor.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.pingmonitor.data.FavoritesRepository
 import com.pingmonitor.data.NotifierRepository
 import com.pingmonitor.data.PingerRepository
+import com.pingmonitor.domain.FavoriteHost
 import com.pingmonitor.domain.PingResult
 import com.pingmonitor.domain.PingSession
 import com.pingmonitor.domain.PingStats
@@ -35,7 +37,7 @@ data class PingUiState(
     val host: String = "",
     val intervalMs: Long = 1000L,
     val selectedSizeBytes: Int? = null,
-    val rttAlertThresholdMs: Int = 0,  // 0 = desactivado
+    val rttAlertThresholdMs: Int = 0,
     val resolvedIp: String? = null,
     val results: List<PingResult> = emptyList(),
     val stats: PingStats = PingStats.EMPTY,
@@ -43,19 +45,28 @@ data class PingUiState(
     val isPaused: Boolean = false,
     val errorMessage: String? = null,
     val sessionStartMs: Long? = null,
-    val sessionHistory: List<PingSession> = emptyList()
+    val sessionHistory: List<PingSession> = emptyList(),
+    val favorites: List<FavoriteHost> = emptyList()
 )
 
 class PingViewModel(
     private val pingUseCase: PingUseCase,
     private val notifier: NotifierRepository,
-    private val pinger: PingerRepository
+    private val pinger: PingerRepository,
+    private val favorites: FavoritesRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PingUiState())
     val uiState: StateFlow<PingUiState> = _uiState.asStateFlow()
 
     private var pingJob: Job? = null
+
+    init {
+        viewModelScope.launch {
+            val loaded = favorites.load()
+            _uiState.update { it.copy(favorites = loaded) }
+        }
+    }
 
     // Seguimiento para notificaciones (no forman parte del estado de UI)
     private var consecutiveTimeouts  = 0
@@ -78,6 +89,21 @@ class PingViewModel(
 
     fun onRttAlertChange(thresholdMs: Int) {
         _uiState.update { it.copy(rttAlertThresholdMs = thresholdMs) }
+    }
+
+    fun toggleFavorite(ip: String, label: String) {
+        val current = _uiState.value.favorites
+        val isFav = current.any { it.ip == ip }
+        viewModelScope.launch {
+            if (isFav) {
+                favorites.remove(ip)
+                _uiState.update { it.copy(favorites = it.favorites.filter { f -> f.ip != ip }) }
+            } else {
+                val host = FavoriteHost(ip = ip, label = label)
+                favorites.save(host)
+                _uiState.update { it.copy(favorites = it.favorites + host) }
+            }
+        }
     }
 
     fun startPing() {

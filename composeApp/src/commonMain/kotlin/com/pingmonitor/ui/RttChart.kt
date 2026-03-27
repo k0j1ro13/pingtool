@@ -13,27 +13,24 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.pingmonitor.domain.PingResult
 
-// Número máximo de puntos visibles en la gráfica
-private const val CHART_MAX_POINTS = 50
+private const val CHART_MAX_POINTS = 60
 
-// Umbrales de color para los puntos según la latencia
-private val COLOR_OK      = Color(0xFF2E7D32)  // verde — rápido
-private val COLOR_WARN    = Color(0xFFF9A825)  // amarillo — medio
-private val COLOR_SLOW    = Color(0xFFB71C1C)  // rojo — lento
+private val COLOR_OK   = Color(0xFF2E7D32)
+private val COLOR_WARN = Color(0xFFF9A825)
+private val COLOR_SLOW = Color(0xFFB71C1C)
 
-/**
- * Gráfica de RTT en tiempo real dibujada con Canvas.
- * Muestra etiquetas de mín/med/máx y colorea los puntos según la latencia.
- */
 @Composable
 fun RttChart(results: List<PingResult>, modifier: Modifier = Modifier) {
     val validPoints = results.filter { it.rttMs != null }.takeLast(CHART_MAX_POINTS)
@@ -44,9 +41,9 @@ fun RttChart(results: List<PingResult>, modifier: Modifier = Modifier) {
     val avgRtt = rttValues.average()
     val maxRtt = rttValues.max()
 
-    val primaryColor      = MaterialTheme.colorScheme.primary
+    val primaryColor        = MaterialTheme.colorScheme.primary
     val surfaceVariantColor = MaterialTheme.colorScheme.surfaceVariant
-    val gridColor         = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+    val gridColor           = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f)
 
     Column(modifier = modifier.fillMaxWidth()) {
         // Etiquetas mín / med / máx
@@ -70,7 +67,7 @@ fun RttChart(results: List<PingResult>, modifier: Modifier = Modifier) {
                 fontWeight = FontWeight.Bold,
                 color = primaryColor,
                 modifier = Modifier.weight(1f),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                textAlign = TextAlign.Center
             )
             Text(
                 text = "↑ ${"%.0f".format(maxRtt)} ms",
@@ -79,7 +76,7 @@ fun RttChart(results: List<PingResult>, modifier: Modifier = Modifier) {
                 fontWeight = FontWeight.Bold,
                 color = if (maxRtt > 300) COLOR_SLOW else if (maxRtt > 100) COLOR_WARN else COLOR_OK,
                 modifier = Modifier.weight(1f),
-                textAlign = androidx.compose.ui.text.style.TextAlign.End
+                textAlign = TextAlign.End
             )
         }
 
@@ -92,15 +89,15 @@ fun RttChart(results: List<PingResult>, modifier: Modifier = Modifier) {
             val range = (maxRtt - minRtt).coerceAtLeast(10.0)
 
             val xPad = 12.dp.toPx()
-            val yPad = 8.dp.toPx()
+            val yPad = 10.dp.toPx()
             val chartWidth  = size.width - 2 * xPad
             val chartHeight = size.height - 2 * yPad
-            val xStep = chartWidth / (validPoints.size - 1).coerceAtLeast(1)
+            val xStep = if (validPoints.size > 1) chartWidth / (validPoints.size - 1) else chartWidth
 
             fun yFor(rtt: Double): Float =
                 (yPad + (1.0 - (rtt - minRtt) / range) * chartHeight).toFloat()
 
-            // Línea de referencia horizontal (RTT promedio)
+            // Línea de referencia (promedio)
             val yAvg = yFor(avgRtt)
             drawLine(
                 color = gridColor,
@@ -109,43 +106,69 @@ fun RttChart(results: List<PingResult>, modifier: Modifier = Modifier) {
                 strokeWidth = 1.dp.toPx()
             )
 
-            // Área rellena bajo la curva
-            val fillPath = Path()
-            fillPath.moveTo(xPad, size.height - yPad)
-            validPoints.forEachIndexed { index, result ->
-                val x = xPad + index * xStep
-                val y = yFor(result.rttMs!!)
-                fillPath.lineTo(x, y)
+            // Calcular puntos
+            val pts = validPoints.mapIndexed { i, r ->
+                Offset(xPad + i * xStep, yFor(r.rttMs!!))
             }
-            val lastX = xPad + (validPoints.size - 1) * xStep
-            fillPath.lineTo(lastX, size.height - yPad)
-            fillPath.close()
-            drawPath(fillPath, color = primaryColor.copy(alpha = 0.08f))
 
-            // Línea principal de RTT
+            // Área rellena con gradiente vertical usando Bezier
+            val fillPath = Path()
+            fillPath.moveTo(pts.first().x, size.height - yPad)
+            fillPath.lineTo(pts.first().x, pts.first().y)
+            for (i in 1 until pts.size) {
+                val cp1x = (pts[i - 1].x + pts[i].x) / 2f
+                fillPath.cubicTo(cp1x, pts[i - 1].y, cp1x, pts[i].y, pts[i].x, pts[i].y)
+            }
+            fillPath.lineTo(pts.last().x, size.height - yPad)
+            fillPath.close()
+            drawPath(
+                fillPath,
+                brush = Brush.verticalGradient(
+                    colors = listOf(primaryColor.copy(alpha = 0.22f), primaryColor.copy(alpha = 0.0f)),
+                    startY = yPad,
+                    endY   = size.height - yPad
+                )
+            )
+
+            // Línea principal con curvas Bezier suaves
             val linePath = Path()
-            validPoints.forEachIndexed { index, result ->
-                val x = xPad + index * xStep
-                val y = yFor(result.rttMs!!)
-                if (index == 0) linePath.moveTo(x, y) else linePath.lineTo(x, y)
+            linePath.moveTo(pts.first().x, pts.first().y)
+            for (i in 1 until pts.size) {
+                val cp1x = (pts[i - 1].x + pts[i].x) / 2f
+                linePath.cubicTo(cp1x, pts[i - 1].y, cp1x, pts[i].y, pts[i].x, pts[i].y)
             }
             drawPath(
                 path  = linePath,
                 color = primaryColor,
-                style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
+                style = Stroke(
+                    width = 2.2.dp.toPx(),
+                    cap   = StrokeCap.Round,
+                    join  = StrokeJoin.Round
+                )
             )
 
-            // Puntos individuales coloreados según la latencia
-            validPoints.forEachIndexed { index, result ->
-                val x = xPad + index * xStep
-                val y = yFor(result.rttMs!!)
+            // Puntos coloreados por latencia con halo
+            pts.forEachIndexed { i, pt ->
+                val rtt = validPoints[i].rttMs!!
                 val dotColor = when {
-                    result.rttMs > 300 -> COLOR_SLOW
-                    result.rttMs > 100 -> COLOR_WARN
-                    else               -> COLOR_OK
+                    rtt > 300 -> COLOR_SLOW
+                    rtt > 100 -> COLOR_WARN
+                    else      -> COLOR_OK
                 }
-                drawCircle(color = dotColor, radius = 3.5.dp.toPx(), center = Offset(x, y))
+                drawCircle(color = dotColor.copy(alpha = 0.18f), radius = 5.dp.toPx(), center = pt)
+                drawCircle(color = dotColor, radius = 3.dp.toPx(), center = pt)
             }
+
+            // Último punto destacado con halo más grande
+            val last = pts.last()
+            val lastRtt = validPoints.last().rttMs!!
+            val lastColor = when {
+                lastRtt > 300 -> COLOR_SLOW
+                lastRtt > 100 -> COLOR_WARN
+                else          -> COLOR_OK
+            }
+            drawCircle(color = lastColor.copy(alpha = 0.28f), radius = 7.5.dp.toPx(), center = last)
+            drawCircle(color = lastColor, radius = 4.dp.toPx(), center = last)
         }
     }
 }

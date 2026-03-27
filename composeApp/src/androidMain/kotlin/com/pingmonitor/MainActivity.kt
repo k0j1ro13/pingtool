@@ -10,6 +10,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.android.gms.ads.MobileAds
+import com.pingmonitor.data.FavoritesImpl
 import com.pingmonitor.data.NetworkInfoImpl
 import com.pingmonitor.data.NotifierImpl
 import com.pingmonitor.di.appModule
@@ -24,6 +25,7 @@ class MainActivity : ComponentActivity() {
         // Contexto para notificaciones e info de red (patrón companion object)
         NotifierImpl.appContext = applicationContext
         NetworkInfoImpl.appContext = applicationContext
+        FavoritesImpl.appContext = applicationContext
 
         // Inicializar AdMob
         MobileAds.initialize(this)

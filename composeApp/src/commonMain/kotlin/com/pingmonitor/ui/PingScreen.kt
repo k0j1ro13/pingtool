@@ -41,6 +41,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenuItem
@@ -229,12 +231,80 @@ fun PingScreen(viewModel: PingViewModel = koinViewModel()) {
                 }
             }
 
+            // ── Favoritos + botón para añadir el host actual ───────────────────
+            if (!state.isRunning) {
+                item {
+                    val currentIp = state.host.trim()
+                    val isFav = state.favorites.any { it.ip == currentIp }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        // Botón estrella para añadir/quitar el host actual
+                        if (currentIp.isNotEmpty()) {
+                            IconButton(
+                                onClick = { viewModel.toggleFavorite(currentIp, currentIp) },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Star,
+                                    contentDescription = if (isFav) "Quitar favorito" else "Añadir favorito",
+                                    tint = if (isFav) Color(0xFFF9A825)
+                                           else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                        // Chips de favoritos
+                        if (state.favorites.isNotEmpty()) {
+                            Row(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                state.favorites.forEach { fav ->
+                                    Box(
+                                        modifier = Modifier
+                                            .background(
+                                                Color(0xFFF9A825).copy(alpha = 0.15f),
+                                                RoundedCornerShape(16.dp)
+                                            )
+                                            .clickable { viewModel.onHostChange(fav.ip) }
+                                            .padding(horizontal = 10.dp, vertical = 5.dp)
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Text(
+                                                text = "★",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = Color(0xFFF9A825)
+                                            )
+                                            Text(
+                                                text = fav.label,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontFamily = FontFamily.Monospace,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             // ── Hosts recientes ────────────────────────────────────────────────
             val recentHosts = state.sessionHistory
                 .map { it.host }
                 .distinct()
                 .takeLast(5)
                 .reversed()
+                .filter { h -> state.favorites.none { it.ip == h } }
             if (recentHosts.isNotEmpty() && !state.isRunning) {
                 item {
                     Row(

@@ -1,5 +1,12 @@
 package com.pingmonitor.ui
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -53,10 +60,12 @@ private val TABS = listOf(
     TabItem("Red",       Icons.Rounded.Search),
     TabItem("Mi Red",    Icons.Rounded.Star),
     TabItem("Historial", Icons.Rounded.List),
-    TabItem("Velocidad", icon = null, emoji = "⚡")
+    TabItem("Velocidad", icon = null, emoji = "⚡"),
+    TabItem("Ruta",      icon = null, emoji = "🛤️"),
+    TabItem("Info",      icon = null, emoji = "ℹ️")
 )
 
-private val TAB_TITLES = listOf("PingTool", "Escáner de Red", "Mi Red", "Historial", "Test de Velocidad")
+private val TAB_TITLES = listOf("PingTool", "Escáner de Red", "Mi Red", "Historial", "Test de Velocidad", "Traceroute", "Acerca de")
 
 private data class HelpSection(val title: String, val body: String)
 
@@ -113,6 +122,22 @@ private val HELP_CONTENT = listOf(
             "• < 10 Mbps: conexión lenta.\n• 10–100 Mbps: conexión normal.\n• > 100 Mbps: conexión rápida.\n\nLa subida suele ser más lenta que la descarga en conexiones de fibra asimétricas."),
         HelpSection("💡  Consejo",
             "Para mayor precisión, cierra otras apps que consuman red y realiza el test varias veces en distintos momentos del día.")
+    ),
+    // Tab 5 — Traceroute
+    listOf(
+        HelpSection("🛤️  ¿Qué es el traceroute?",
+            "Muestra cada router (salto) por el que pasa tu tráfico desde tu dispositivo hasta el destino. Útil para localizar dónde se produce una caída de rendimiento o una pérdida de conectividad."),
+        HelpSection("🔢  Número de salto (TTL)",
+            "Cada paquete viaja con un contador de vida (TTL). Cuando llega a un router, este reduce el TTL en 1. Si llega a 0, el router descarta el paquete y te avisa — así sabemos la IP de ese router."),
+        HelpSection("📊  Colores de latencia",
+            "• Verde: < 20 ms — excelente.\n• Amarillo: 20–80 ms — normal.\n• Naranja: 80–200 ms — alto.\n• Rojo: > 200 ms — muy alto.\n• Gris (* * *): el router no responde (puede ser normal en algunos tramos)."),
+        HelpSection("💡  Consejo",
+            "Si ves una latencia alta en un salto concreto, el problema está en ese tramo de red. Si todos los saltos posteriores tienen la misma latencia alta, el problema está en ese punto.")
+    ),
+    // Tab 6 — Acerca de
+    listOf(
+        HelpSection("ℹ️  Acerca de PingTool",
+            "Aplicación de diagnóstico de red construida con Kotlin Multiplatform y Compose Multiplatform. Disponible en Android y escritorio (Windows, macOS, Linux).")
     )
 )
 
@@ -225,17 +250,30 @@ fun MainScreen(
             } // Column del bottomBar
         }
     ) { padding ->
-        Column(
+        AnimatedContent(
+            targetState = selectedTab,
+            transitionSpec = {
+                val direction = if (targetState > initialState) 1 else -1
+                (slideInHorizontally(tween(220)) { it / 5 * direction } + fadeIn(tween(220))) togetherWith
+                (slideOutHorizontally(tween(180)) { -it / 5 * direction } + fadeOut(tween(180)))
+            },
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-        ) {
-            when (selectedTab) {
+                .padding(padding),
+            label = "tab"
+        ) { tab ->
+            when (tab) {
                 0 -> PingScreen(viewModel = pingViewModel)
-                1 -> NetworkScanScreen()
+                1 -> NetworkScanScreen(onPingDevice = { ip ->
+                    pingViewModel.onHostChange(ip)
+                    selectedTab = 0
+                })
                 2 -> NetworkInfoScreen()
                 3 -> HistoryScreen(viewModel = pingViewModel)
                 4 -> SpeedTestScreen()
+                5 -> TracerouteScreen()
+                6 -> AboutScreen()
+                else -> Unit
             }
         }
     }

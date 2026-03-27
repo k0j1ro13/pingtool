@@ -18,10 +18,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -32,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -42,7 +45,10 @@ import com.pingmonitor.viewmodel.NetworkScanViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun NetworkScanScreen(viewModel: NetworkScanViewModel = koinViewModel()) {
+fun NetworkScanScreen(
+    viewModel: NetworkScanViewModel = koinViewModel(),
+    onPingDevice: (String) -> Unit = {}
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val notStarted = state.scanned == 0 && !state.isScanning
 
@@ -161,7 +167,7 @@ fun NetworkScanScreen(viewModel: NetworkScanViewModel = koinViewModel()) {
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 items(state.devices, key = { it.ip }) { device ->
-                    DeviceCard(device)
+                    DeviceCard(device, onPingDevice = onPingDevice)
                 }
             }
         }
@@ -169,57 +175,87 @@ fun NetworkScanScreen(viewModel: NetworkScanViewModel = koinViewModel()) {
 }
 
 @Composable
-private fun DeviceCard(device: NetworkDevice) {
+private fun DeviceCard(device: NetworkDevice, onPingDevice: (String) -> Unit = {}) {
+    val rttColor = when {
+        device.rttMs == null   -> MaterialTheme.colorScheme.primary
+        device.rttMs < 50      -> Color(0xFF2E7D32)
+        device.rttMs < 150     -> Color(0xFFF9A825)
+        else                   -> Color(0xFFB71C1C)
+    }
+    val cardGradient = Brush.horizontalGradient(
+        colors = listOf(
+            Color(0xFF4CAF50).copy(alpha = 0.08f),
+            MaterialTheme.colorScheme.surfaceVariant
+        )
+    )
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .background(cardGradient)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Indicador verde online
-        Box(
-            modifier = Modifier
-                .size(10.dp)
-                .clip(CircleShape)
-                .background(Color(0xFF4CAF50))
-        )
+        // Indicador online con halo
+        Box(contentAlignment = Alignment.Center) {
+            Box(
+                modifier = Modifier
+                    .size(18.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF4CAF50).copy(alpha = 0.25f))
+            )
+            Box(
+                modifier = Modifier
+                    .size(10.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF4CAF50))
+            )
+        }
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = device.ip,
-                style = MaterialTheme.typography.bodyMedium,
+                text       = device.ip,
+                style      = MaterialTheme.typography.bodyMedium,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+                color      = MaterialTheme.colorScheme.onSurface
             )
             if (device.hostname != null) {
                 Text(
-                    text = device.hostname,
+                    text  = device.hostname,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
-        // RTT badge
+        // RTT badge coloreado
         if (device.rttMs != null) {
             Box(
                 modifier = Modifier
-                    .background(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                        RoundedCornerShape(8.dp)
-                    )
+                    .background(rttColor.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
                     .padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
                 Text(
-                    text = "%.0f ms".format(device.rttMs),
-                    style = MaterialTheme.typography.labelSmall,
+                    text       = "%.0f ms".format(device.rttMs),
+                    style      = MaterialTheme.typography.labelSmall,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    color      = rttColor
                 )
             }
+        }
+        // Botón ping directo
+        IconButton(
+            onClick  = { onPingDevice(device.ip) },
+            modifier = Modifier.size(32.dp)
+        ) {
+            Icon(
+                imageVector        = Icons.Rounded.Refresh,
+                contentDescription = "Ping ${device.ip}",
+                tint               = MaterialTheme.colorScheme.primary,
+                modifier           = Modifier.size(18.dp)
+            )
         }
     }
 }
