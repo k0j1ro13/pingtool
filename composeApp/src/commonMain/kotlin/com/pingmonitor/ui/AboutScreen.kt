@@ -28,8 +28,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
-private const val APP_VERSION = "1.0.7"
-private const val BUILD_NUMBER = "7"
+private const val APP_VERSION = "1.0.8"
+private const val BUILD_NUMBER = "8"
 
 @Composable
 fun AboutScreen() {
@@ -125,11 +125,18 @@ fun AboutScreen() {
             AboutRow("iOS", "Próximamente")
         }
 
+        // Desarrollador
+        AboutCard(title = "👤  Desarrollador") {
+            AboutRow("Autor", "k0j1ro13")
+            AboutRow("GitHub", "github.com/k0j1ro13")
+            AboutRow("Repositorio", "github.com/k0j1ro13/pingtool")
+        }
+
         Spacer(Modifier.height(8.dp))
 
         // Footer
         Text(
-            text      = "© 2025 PingTool",
+            text      = "© 2025 PingTool · k0j1ro13",
             style     = MaterialTheme.typography.labelSmall,
             color     = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier  = Modifier.align(Alignment.CenterHorizontally)
