@@ -105,14 +105,14 @@ fun NetworkInfoScreen(viewModel: NetworkInfoViewModel = koinViewModel()) {
             }
 
             state.info != null -> {
-                NetworkInfoContent(info = state.info!!)
+                NetworkInfoContent(info = state.info!!, hostnames = state.hostnames)
             }
         }
     }
 }
 
 @Composable
-private fun NetworkInfoContent(info: NetworkInfo) {
+private fun NetworkInfoContent(info: NetworkInfo, hostnames: Map<String, String> = emptyMap()) {
     Column(
         modifier = Modifier.verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -208,13 +208,14 @@ private fun NetworkInfoContent(info: NetworkInfo) {
 
         // ── Direccionamiento ─────────────────────────────────────────────
         InfoCard(title = "🌐  Direccionamiento IP") {
-            InfoRow("IP local",       info.localIp     ?: "—")
-            InfoRow("Máscara",        info.subnetMask  ?: "—")
-            InfoRow("Puerta de enlace", info.gateway   ?: "—")
+            InfoRow("IP local",         info.localIp     ?: "—")
+            InfoRow("Máscara",          info.subnetMask  ?: "—")
+            val gw = info.gateway ?: "—"
+            InfoRow("Puerta de enlace", gw, hostnames[gw])
             if (info.ipv6 != null) {
                 InfoRow("IPv6", info.ipv6)
             }
-            InfoRow("IP pública",     info.publicIp    ?: "Obteniendo…")
+            InfoRow("IP pública",       info.publicIp    ?: "Obteniendo…", info.publicIp?.let { hostnames[it] })
         }
 
         // ── DNS ───────────────────────────────────────────────────────────
@@ -223,7 +224,7 @@ private fun NetworkInfoContent(info: NetworkInfo) {
                 InfoRow("DNS", "No detectados")
             } else {
                 info.dnsServers.forEachIndexed { i, dns ->
-                    InfoRow("DNS ${i + 1}", dns)
+                    InfoRow("DNS ${i + 1}", dns, hostnames[dns])
                 }
             }
         }
@@ -272,9 +273,9 @@ private fun InfoCard(title: String, content: @Composable () -> Unit) {
     }
 }
 
-/** Fila de etiqueta + valor. */
+/** Fila de etiqueta + valor (+ hostname opcional debajo). */
 @Composable
-private fun InfoRow(label: String, value: String) {
+private fun InfoRow(label: String, value: String, hostname: String? = null) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -286,13 +287,21 @@ private fun InfoRow(label: String, value: String) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(0.45f)
         )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodySmall,
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(0.55f)
-        )
+        Column(modifier = Modifier.weight(0.55f)) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodySmall,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            if (hostname != null) {
+                Text(
+                    text = hostname,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                )
+            }
+        }
     }
 }

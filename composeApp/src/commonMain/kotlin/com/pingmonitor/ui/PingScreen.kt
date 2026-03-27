@@ -395,9 +395,11 @@ fun PingScreen(viewModel: PingViewModel = koinViewModel()) {
                     }
                 }
             } else {
-                // ── Hero: último RTT ──────────────────────────────────────────
-                state.results.lastOrNull()?.let { last ->
-                    item { RttHeroCard(last) }
+                // ── Panel de estadísticas (arriba) ────────────────────────────
+                item {
+                    Spacer(Modifier.height(2.dp))
+                    StatsPanel(stats = state.stats)
+                    Spacer(Modifier.height(4.dp))
                 }
 
                 // ── Gráfica RTT ───────────────────────────────────────────────
@@ -470,12 +472,6 @@ fun PingScreen(viewModel: PingViewModel = koinViewModel()) {
                     PingRow(result)
                 }
 
-                // ── Panel de estadísticas ─────────────────────────────────────
-                item {
-                    Spacer(Modifier.height(2.dp))
-                    StatsPanel(stats = state.stats)
-                    Spacer(Modifier.height(8.dp))
-                }
             }
         } // cierre LazyColumn
 
@@ -509,6 +505,14 @@ fun PingScreen(viewModel: PingViewModel = koinViewModel()) {
             }
         }
     } // cierre Box
+
+    // ── Último paquete fijo en la parte inferior ──────────────────────────
+    state.results.lastOrNull()?.let { last ->
+        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+        Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
+            RttHeroCard(last)
+        }
+    }
 
     // ── Botones fijos en la parte inferior ────────────────────────────────
     HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))

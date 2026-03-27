@@ -143,6 +143,13 @@ actual class NetworkInfoImpl actual constructor() : NetworkInfoRepository {
         ip.takeIf { it.matches(Regex("""[\d.]+""")) }
     } catch (_: Exception) { null }
 
+    override suspend fun resolveHostname(ip: String): String? = withContext(Dispatchers.IO) {
+        try {
+            val name = java.net.InetAddress.getByName(ip).canonicalHostName
+            if (name == ip) null else name
+        } catch (_: Exception) { null }
+    }
+
     private fun runCommand(vararg args: String): String {
         val process = ProcessBuilder(*args).redirectErrorStream(true).start()
         val out = process.inputStream.bufferedReader().readText()

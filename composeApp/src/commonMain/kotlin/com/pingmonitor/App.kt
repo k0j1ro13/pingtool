@@ -10,7 +10,7 @@ import com.pingmonitor.ui.PingToolTheme
 
 @Composable
 fun App() {
-    var isDarkTheme by remember { mutableStateOf(true) }
+    var isDarkTheme by remember { mutableStateOf(false) }
     PingToolTheme(darkTheme = isDarkTheme) {
         MainScreen(
             isDarkTheme = isDarkTheme,

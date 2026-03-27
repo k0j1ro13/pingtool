@@ -6,22 +6,22 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-// ── Paleta oscura — estética de herramienta de red profesional ──────────────
-private val DarkPrimary              = Color(0xFF00BFA5)
-private val DarkOnPrimary            = Color(0xFF003731)
-private val DarkPrimaryContainer     = Color(0xFF004D45)
-private val DarkOnPrimaryContainer   = Color(0xFF70F7E6)
-private val DarkSecondary            = Color(0xFF0097A7)
-private val DarkOnSecondary          = Color(0xFF001F24)
-private val DarkBackground           = Color(0xFF0D1117)
-private val DarkOnBackground         = Color(0xFFE6EDF3)
-private val DarkSurface              = Color(0xFF161B22)
-private val DarkOnSurface            = Color(0xFFE6EDF3)
-private val DarkSurfaceVariant       = Color(0xFF1C2128)
-private val DarkOnSurfaceVariant     = Color(0xFF8B949E)
+// ── Paleta oscura mejorada ───────────────────────────────────────────────────
+private val DarkPrimary              = Color(0xFF26D0BE)   // teal vivo
+private val DarkOnPrimary            = Color(0xFF00201C)
+private val DarkPrimaryContainer     = Color(0xFF004D44)
+private val DarkOnPrimaryContainer   = Color(0xFF80F5E4)
+private val DarkSecondary            = Color(0xFF00BCD4)   // cyan
+private val DarkOnSecondary          = Color(0xFF00212A)
+private val DarkBackground           = Color(0xFF090D12)   // negro profundo
+private val DarkOnBackground         = Color(0xFFE1EAF2)   // blanco azulado
+private val DarkSurface              = Color(0xFF10161D)   // superficie oscura
+private val DarkOnSurface            = Color(0xFFE1EAF2)
+private val DarkSurfaceVariant       = Color(0xFF182028)   // tarjetas
+private val DarkOnSurfaceVariant     = Color(0xFF8FA8BE)   // texto secundario
 private val DarkError                = Color(0xFFFF6B6B)
 private val DarkOnError              = Color(0xFF690005)
-private val DarkOutline              = Color(0xFF30363D)
+private val DarkOutline              = Color(0xFF2A3A46)   // bordes sutiles
 
 private val PingToolDarkColorScheme = darkColorScheme(
     primary              = DarkPrimary,
@@ -41,27 +41,29 @@ private val PingToolDarkColorScheme = darkColorScheme(
     outline              = DarkOutline
 )
 
-// ── Paleta clara ─────────────────────────────────────────────────────────────
+// ── Paleta clara (principal) ─────────────────────────────────────────────────
 private val PingToolLightColorScheme = lightColorScheme(
-    primary              = Color(0xFF006B5F),
+    primary              = Color(0xFF006B5F),   // teal oscuro
     onPrimary            = Color(0xFFFFFFFF),
-    primaryContainer     = Color(0xFF9EF2E4),
+    primaryContainer     = Color(0xFFB2DFDB),   // mint suave
     onPrimaryContainer   = Color(0xFF00201B),
     secondary            = Color(0xFF00677A),
     onSecondary          = Color(0xFFFFFFFF),
-    background           = Color(0xFFF4FBFA),
-    onBackground         = Color(0xFF171D1D),
-    surface              = Color(0xFFF4FBFA),
-    onSurface            = Color(0xFF171D1D),
-    surfaceVariant       = Color(0xFFDAE5E3),
-    onSurfaceVariant     = Color(0xFF3F4948),
+    secondaryContainer   = Color(0xFFB2EBF2),
+    onSecondaryContainer = Color(0xFF001F26),
+    background           = Color(0xFFF6FFFE),   // blanco-teal muy suave
+    onBackground         = Color(0xFF141D1D),
+    surface              = Color(0xFFFFFFFF),   // blanco puro para tarjetas
+    onSurface            = Color(0xFF141D1D),
+    surfaceVariant       = Color(0xFFE4F2F0),   // fondo de tarjetas
+    onSurfaceVariant     = Color(0xFF3E4948),
     error                = Color(0xFFBA1A1A),
     onError              = Color(0xFFFFFFFF),
     outline              = Color(0xFF6F7978)
 )
 
 @Composable
-fun PingToolTheme(darkTheme: Boolean = true, content: @Composable () -> Unit) {
+fun PingToolTheme(darkTheme: Boolean = false, content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = if (darkTheme) PingToolDarkColorScheme else PingToolLightColorScheme,
         content = content

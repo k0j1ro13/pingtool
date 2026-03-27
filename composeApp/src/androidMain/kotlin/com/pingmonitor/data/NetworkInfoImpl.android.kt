@@ -115,4 +115,11 @@ actual class NetworkInfoImpl actual constructor() : NetworkInfoRepository {
             signalDbm      = signalDbm
         )
     }
+
+    override suspend fun resolveHostname(ip: String): String? = withContext(Dispatchers.IO) {
+        try {
+            val name = java.net.InetAddress.getByName(ip).canonicalHostName
+            if (name == ip) null else name
+        } catch (_: Exception) { null }
+    }
 }
