@@ -31,15 +31,30 @@ actual class NetworkScannerImpl actual constructor() : NetworkScannerRepository 
                     address.isReachable(timeoutMs)
                 }
                 NetworkDevice(
-                    ip = ip,
-                    hostname = if (reachable) {
-                        try { address.canonicalHostName.takeIf { it != ip } } catch (_: Exception) { null }
-                    } else null,
-                    rttMs = if (reachable) duration.inWholeMilliseconds.toDouble() else null,
+                    ip         = ip,
+                    hostname   = if (reachable) resolveHostname(ip) else null,
+                    rttMs      = if (reachable) duration.inWholeMilliseconds.toDouble() else null,
                     isReachable = reachable
                 )
             } catch (_: Exception) {
                 NetworkDevice(ip = ip, hostname = null, rttMs = null, isReachable = false)
             }
         }
+
+    /**
+     * Extrae el hostname desde la primera línea del comando ping:
+     *   "PING hostname (ip) ..." → devuelve "hostname"
+     *   "PING ip (ip) ..."       → devuelve null
+     * Usa el resolver completo del sistema (DNS + mDNS), más fiable que canonicalHostName.
+     */
+    private fun resolveHostname(ip: String): String? = try {
+        val process = ProcessBuilder("ping", "-c", "1", "-W", "1", ip)
+            .redirectErrorStream(true)
+            .start()
+        val firstLine = process.inputStream.bufferedReader().readLine() ?: return null
+        process.destroyForcibly()
+        // "PING hostname (ip) 56(84) bytes of data."
+        val match = Regex("""^PING\s+(\S+)\s+\(""").find(firstLine)
+        match?.groupValues?.get(1)?.takeIf { it != ip }
+    } catch (_: Exception) { null }
 }

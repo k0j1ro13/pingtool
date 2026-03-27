@@ -28,8 +28,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
-private const val APP_VERSION = "1.0.9"
-private const val BUILD_NUMBER = "9"
+private const val APP_VERSION = "1.0.10"
+private const val BUILD_NUMBER = "10"
 
 @Composable
 fun AboutScreen() {
